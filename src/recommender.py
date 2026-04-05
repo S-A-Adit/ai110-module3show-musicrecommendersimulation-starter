@@ -46,19 +46,56 @@ class Recommender:
         return "Explanation placeholder"
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
-    # TODO: Implement CSV loading logic
-    print(f"Loading songs from {csv_path}...")
-    return []
+    """Read a CSV of songs and return a list of dicts with numeric fields cast to float/int."""
+    import csv
+    songs = []
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            row["id"] = int(row["id"])
+            row["energy"] = float(row["energy"])
+            row["tempo_bpm"] = float(row["tempo_bpm"])
+            row["valence"] = float(row["valence"])
+            row["danceability"] = float(row["danceability"])
+            row["acousticness"] = float(row["acousticness"])
+            songs.append(row)
+    print(f"Loaded songs: {len(songs)}")
+    return songs
+
+def score_song(user_prefs: Dict, song: Dict) -> float:
+    """Score one song 0–5.0: +2.0 genre match, +1.5 mood match, +1.0 energy proximity, +0.5 acousticness fit."""
+    score = 0.0
+
+    if song.get("genre") == user_prefs.get("genre"):
+        score += 2.0
+
+    if song.get("mood") == user_prefs.get("mood"):
+        score += 1.5
+
+    if "energy" in user_prefs:
+        score += 1.0 - abs(song["energy"] - user_prefs["energy"])
+
+    if "likes_acoustic" in user_prefs:
+        if user_prefs["likes_acoustic"]:
+            score += song["acousticness"] * 0.5
+        else:
+            score += (1.0 - song["acousticness"]) * 0.5
+
+    return score
+
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
-    # TODO: Implement scoring and ranking logic
-    # Expected return format: (song_dict, score, explanation)
-    return []
+    """Score every song, sort descending, and return the top-k as (song, score, explanation) tuples."""
+    scored = []
+    for song in songs:
+        s = score_song(user_prefs, song)
+        matches = []
+        if song.get("genre") == user_prefs.get("genre"):
+            matches.append(f"genre={song['genre']}")
+        if song.get("mood") == user_prefs.get("mood"):
+            matches.append(f"mood={song['mood']}")
+        matches.append(f"energy={song['energy']} vs target={user_prefs.get('energy', '?')}")
+        explanation = "Matches: " + ", ".join(matches)
+        scored.append((song, s, explanation))
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return scored[:k]

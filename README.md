@@ -17,17 +17,47 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
+Real-world music recommenders (like Spotify's Discover Weekly) combine two strategies: **collaborative filtering**, which surfaces songs liked by users with similar taste, and **content-based filtering**, which matches songs to a listener's preferred attributes like genre, tempo, and energy. Production systems layer both, plus contextual signals (time of day, device, recent skips). This simulation focuses on **content-based filtering only** — it scores each song by how closely its attributes match a user's declared taste profile, prioritizing genre and mood as the strongest intent signals, then using energy and acousticness as continuous refinements to separate, for example, a focused study playlist from a high-energy workout set.
 
-Some prompts to answer:
+### Algorithm Recipe
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+For every song in the catalog, the system computes a **total score** by summing four weighted components:
 
-You can include a simple diagram or bullet list if helpful.
+| Rule | Weight | How it works |
+|------|--------|--------------|
+| Genre match | `2.0` | `+2.0` if `song.genre == user.favorite_genre`, else `0` |
+| Mood match | `1.5` | `+1.5` if `song.mood == user.favorite_mood`, else `0` |
+| Energy proximity | `1.0` | `1.0 − |song.energy − user.target_energy|` (ranges 0.0–1.0) |
+| Acousticness fit | `0.5` | If `likes_acoustic`: `song.acousticness × 0.5`; else `(1 − song.acousticness) × 0.5` |
+
+**Maximum possible score: 5.0** (perfect match on all four dimensions)
+
+All songs are then sorted by total score (descending) and the top `k` are returned, each paired with a plain-language explanation of why it ranked where it did.
+
+**Why these weights?** Genre carries the most weight (2.0) because it is the strongest intent signal — a pop fan almost never wants metal. Mood (1.5) comes second because it separates study-chill from workout-hype within the same genre. Energy (1.0) is a continuous refinement inside a genre/mood cluster. Acousticness (0.5) is the softest preference — a nice-to-have, not a dealbreaker.
+
+### Potential Biases
+
+- **Genre over-weighting:** Because genre holds a 2.0 weight — nearly half the maximum score — the system can bury a song that perfectly matches a user's mood, energy, and acoustic taste simply because it lives in the wrong genre category. A great jazz track might score lower than a mediocre pop track for a pop fan, even if the jazz song is a closer experiential fit.
+- **Mood label sparsity:** With only one or two songs per mood in the catalog, a user whose favorite mood has no exact match will receive recommendations driven almost entirely by genre, making mood feel like a tiebreaker rather than a real signal.
+- **Binary acoustic penalty:** The `likes_acoustic` flag treats preference as fully on or off. Users who enjoy a mix of acoustic and electronic songs have no way to express that nuance, and the scoring will always push them toward one extreme.
+- **No personalization over time:** The system treats every session as a fresh start. It has no memory of what the user skipped or replayed, so it cannot learn or adapt.
+
+### `Song` features used in scoring
+
+- `genre` — categorical; matched directly against the user's preferred genre
+- `mood` — categorical; matched directly against the user's preferred mood
+- `energy` — continuous (0.0–1.0); compared against the user's target energy level
+- `acousticness` — continuous (0.0–1.0); separa![alt text](<Screenshot 2026-04-05 183630.png>)tes acoustic/ambient songs from electronic/synthetic ones
+- `tempo_bpm` — continuous (60–152 BPM); secondary refinement within a genre for pacing
+- `danceability`, `valence` — present in the data but lower priority given their narrower variance across this catalog
+
+### `UserProfile` fields driving recommendations
+
+- `favorite_genre` — primary filter signal (e.g. `"lofi"`, `"pop"`)
+- `favorite_mood` — secondary filter signal (e.g. `"chill"`, `"intense"`)
+- `target_energy` — continuous preference; songs whose energy is closest to this value score higher
+- `likes_acoustic` — boolean; boosts high-acousticness songs when `True`, penalizes them when `False`
 
 ---
 
