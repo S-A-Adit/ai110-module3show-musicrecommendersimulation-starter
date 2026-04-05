@@ -126,10 +126,9 @@ Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 
-Write 1 to 2 paragraphs here about what you learned:
+The most important thing this project taught me is that a recommender can be mathematically correct and still feel wrong. When I set `energy=0.99` for a classical profile, the system returned a quiet, peaceful song with energy=0.18 — and the math was perfectly valid. That gap between "correct by the rules" and "correct for the user" is where most of the hard work in real AI systems lives. Writing the scoring function took an hour; figuring out *why* it behaved unexpectedly took much longer.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+The second thing I learned is how much the explanation shapes the experience. The same ranked list with a one-line reason ("genre=pop, mood=happy, energy 0.82 close to your target") felt curated and trustworthy, while a bare list of song titles would have felt arbitrary. Simple algorithms can feel surprisingly intelligent when their reasoning is visible — which also means they can mislead users just as easily if that reasoning is wrong but still sounds confident.
 
 
 ---
@@ -238,4 +237,4 @@ A few sentences about what you learned:
 - What surprised you about how your system behaved
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
-
+<Screenshot 2026-04-05 185256.png>

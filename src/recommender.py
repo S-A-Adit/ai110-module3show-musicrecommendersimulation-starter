@@ -63,18 +63,25 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> float:
-    """Score one song 0–5.0: +2.0 genre match, +1.5 mood match, +1.0 energy proximity, +0.5 acousticness fit."""
+    """Score one song 0–5.0: +1.0 genre match, +1.5 mood match, +2.0 energy proximity, +0.5 acousticness fit.
+    Experiment — energy-first: genre weight halved (2.0 → 1.0), energy multiplier doubled (1.0 → 2.0).
+    Max possible score: 1.0 + 1.5 + 2.0 + 0.5 = 5.0
+    """
     score = 0.0
 
+    # genre match weight: 1.0 (halved — experiment: energy-first)
     if song.get("genre") == user_prefs.get("genre"):
-        score += 2.0
+        score += 1.0
 
+    # mood match weight: 1.5 (unchanged)
     if song.get("mood") == user_prefs.get("mood"):
         score += 1.5
 
+    # energy proximity weight: 2.0 * (1.0 - distance), max +2.0 (doubled — experiment: energy-first)
     if "energy" in user_prefs:
-        score += 1.0 - abs(song["energy"] - user_prefs["energy"])
+        score += 2.0 * (1.0 - abs(song["energy"] - user_prefs["energy"]))
 
+    # acousticness fit weight: multiplied by 0.5, max +0.5 (unchanged)
     if "likes_acoustic" in user_prefs:
         if user_prefs["likes_acoustic"]:
             score += song["acousticness"] * 0.5
