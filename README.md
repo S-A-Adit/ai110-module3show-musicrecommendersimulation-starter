@@ -238,3 +238,4 @@ A few sentences about what you learned:
 - How did building this change how you think about real music recommenders
 - Where do you think human judgment still matters, even if the model seems "smart"
 <Screenshot 2026-04-05 185256.png>
+<Screenshot 2026-04-05 183630.png>
